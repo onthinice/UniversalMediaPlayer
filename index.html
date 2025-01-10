@@ -1,76 +1,483 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Video Player</title>
+    <title>Universal Media Player</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        /* CSS Variables for Themes */
+        :root {
+            --background-color: #121212;
+            --text-color: #ffffff;
+            --primary-color: #1e90ff;
+            --input-background: #1e1e1e;
+            --button-background: #1e90ff;
+            --button-hover: #63b3ed;
+            --loader-border: #1e90ff;
+        }
+
+        [data-theme="light"] {
+            --background-color: #f0f0f0;
+            --text-color: #121212;
+            --primary-color: #ff5722;
+            --input-background: #ffffff;
+            --button-background: #ff5722;
+            --button-hover: #ff8a50;
+            --loader-border: #ff5722;
+        }
+
+        /* Reset & Basic Styles */
+        * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            transition: all 0.3s ease;
+        }
+
+        body {
+            background: var(--background-color);
+            color: var(--text-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height:100vh;
-            width:100vw ;
-            background-color: black;
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.5s ease, color 0.5s ease;
         }
-        .container {
-            text-align: center;
-        }
-        video {
-            width:100%;
-            height: 100%;
-        }
-        form {
+
+        h1 {
             margin-bottom: 20px;
+            animation: fadeInDown 1s ease;
         }
-        input[type="text"] {
-            width: 120px;
-            max-width: 500px;
-            padding: 10px;
-            margin-right: 10px;
-            border: 2px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            padding: 10px 20px;
-            background-color: #007BFF;
-            border: none;
-            color: white;
-            border-radius: 5px;
+
+        /* Theme Toggle Switch */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
             cursor: pointer;
+            user-select: none;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .theme-toggle input {
+            display: none;
+        }
+
+        .slider {
+            width: 50px;
+            height: 25px;
+            background: var(--input-background);
+            border-radius: 25px;
+            position: relative;
+            transition: background 0.3s ease;
+        }
+
+        .slider::before {
+            content: "";
+            position: absolute;
+            width: 21px;
+            height: 21px;
+            background: var(--text-color);
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s ease, background 0.3s ease;
+        }
+
+        input:checked + .slider {
+            background: var(--primary-color);
+        }
+
+        input:checked + .slider::before {
+            transform: translateX(25px);
+            background: var(--background-color);
+        }
+
+        /* Form Styles */
+        .media-form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 30px;
+            animation: fadeInUp 1s ease;
+        }
+
+        .media-form input {
+            width: 100%;
+            padding: 12px 20px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+            background: var(--input-background);
+            color: var(--text-color);
+            transition: box-shadow 0.3s ease, background 0.3s ease, color 0.3s ease;
+        }
+
+        .media-form input::placeholder {
+            color: var(--text-color);
+            opacity: 0.7;
+            transition: opacity 0.3s ease;
+        }
+
+        .media-form input:focus {
+            box-shadow: 0 0 10px var(--primary-color);
+        }
+
+        .media-form button {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            background: var(--button-background);
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .media-form button:hover {
+            background: var(--button-hover);
+            transform: scale(1.05);
+        }
+
+        /* Media Display Area */
+        .media-display {
+            width: 100%;
+            max-width: 800px;
+            min-height: 400px;
+            background: var(--input-background);
+            border-radius: 15px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            animation: fadeIn 1s ease;
+            transition: background 0.3s ease;
+        }
+
+        /* Loader */
+        .loader {
+            border: 8px solid #f3f3f3;
+            border-top: 8px solid var(--loader-border);
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            position: absolute;
+        }
+
+        /* Media Elements Styles */
+        video, audio, img, embed {
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 10px;
+            opacity: 0;
+            animation: fadeInMedia 0.5s forwards;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes fadeInMedia {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .media-display {
+                min-height: 300px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .media-form input, .media-form button {
+                font-size: 14px;
+                padding: 10px 15px;
+            }
+
+            .media-display {
+                min-height: 200px;
+            }
+
+            .slider {
+                width: 40px;
+                height: 20px;
+            }
+
+            .slider::before {
+                width: 16px;
+                height: 16px;
+                top: 2px;
+                left: 2px;
+            }
+
+            input:checked + .slider::before {
+                transform: translateX(20px);
+            }
         }
     </style>
+    <!-- Include HLS.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <!-- Include Dash.js from CDN (Optional, for DASH support) -->
+    <script src="https://cdn.dashjs.org/latest/dash.all.min.js"></script>
 </head>
-<body>
-    <div class="container">
-        <h1>Video Player</h1>
-        <form id="videoForm">
-            <input type="text" id="videoUrl" placeholder="Enter video URL" required>
-            <button type="submit">Load Video</button>
-        </form>
-        <video id="videoPlayer" controls>
-            Your browser does not support the video tag.
-        </video>
-    </div>
-    <script>
-        document.getElementById('videoForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const videoUrl = document.getElementById('videoUrl').value;
-            const videoPlayer = document.getElementById('videoPlayer');
+<body data-theme="dark">
 
-            if (videoUrl) {
-                videoPlayer.src = videoUrl;
-                videoPlayer.play();
+    <!-- Theme Toggle Switch -->
+    <label class="theme-toggle">
+        <input type="checkbox" id="themeSwitch">
+        <div class="slider"></div>
+    </label>
+
+    <h1>Universal Media Player</h1>
+
+    <form class="media-form" id="mediaForm">
+        <input type="url" id="mediaURL" placeholder="Enter media URL here..." required>
+        <button type="submit">Load Media</button>
+    </form>
+
+    <div class="media-display" id="mediaDisplay">
+        <!-- Loader -->
+        <div class="loader" id="loader"></div>
+    </div>
+
+    <script>
+        const mediaForm = document.getElementById('mediaForm');
+        const mediaURLInput = document.getElementById('mediaURL');
+        const mediaDisplay = document.getElementById('mediaDisplay');
+        const loader = document.getElementById('loader');
+        const themeSwitch = document.getElementById('themeSwitch');
+        const body = document.body;
+
+        // Theme Toggle Event
+        themeSwitch.addEventListener('change', function() {
+            if (this.checked) {
+                body.setAttribute('data-theme', 'light');
             } else {
-                alert('Please enter a valid video URL.');
+                body.setAttribute('data-theme', 'dark');
             }
         });
+
+        mediaForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const url = mediaURLInput.value.trim();
+            if (url === "") {
+                alert("Please enter a valid media URL.");
+                return;
+            }
+            loadMedia(url);
+        });
+
+        function loadMedia(url) {
+            // Show loader
+            loader.style.display = 'block';
+            // Clear previous media
+            mediaDisplay.innerHTML = '';
+            mediaDisplay.appendChild(loader);
+
+            // Determine media type based on extension or content type
+            const extension = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
+            const videoExtensions = ['mp4', 'webm', 'ogg', 'mkv', 'avi', 'mov', 'flv'];
+            const audioExtensions = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'opus'];
+            const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'svg', 'webp'];
+            const pdfExtensions = ['pdf', 'm3u8', 'mpd']; // Including streaming extensions
+
+            if (videoExtensions.includes(extension)) {
+                displayVideo(url);
+            } else if (audioExtensions.includes(extension) || extension === 'm3u8' || extension === 'mpd') {
+                displayAudio(url);
+            } else if (imageExtensions.includes(extension)) {
+                displayImage(url);
+            } else if (pdfExtensions.includes(extension)) {
+                displayPDF(url);
+            } else {
+                alert("Unsupported media type.");
+                loader.style.display = 'none';
+            }
+        }
+
+        function displayVideo(url) {
+            const video = document.createElement('video');
+            video.controls = true;
+            video.autoplay = true;
+
+            // Handling high-quality video without audio
+            video.addEventListener('error', function(e) {
+                console.error("Video Error:", e);
+                alert("Error loading video. It might be a format not supported by your browser.");
+                loader.style.display = 'none';
+            });
+
+            video.src = url;
+            video.type = getMimeType(url);
+            video.style.display = 'block';
+
+            video.onloadeddata = () => {
+                loader.style.display = 'none';
+            };
+
+            mediaDisplay.appendChild(video);
+        }
+
+        function displayAudio(url) {
+            const audio = document.createElement('audio');
+            audio.controls = true;
+            audio.autoplay = true;
+
+            // Determine if the audio is a stream (e.g., HLS, DASH)
+            if (url.endsWith('.m3u8')) {
+                // HLS Streaming
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(url);
+                    hls.attachMedia(audio);
+                    hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                        loader.style.display = 'none';
+                        audio.play();
+                    });
+                    hls.on(Hls.Events.ERROR, function(event, data) {
+                        console.error("HLS Error:", data);
+                        alert("Error loading HLS stream.");
+                        loader.style.display = 'none';
+                    });
+                } else if (audio.canPlayType('application/vnd.apple.mpegurl')) {
+                    // Some browsers (e.g., Safari) support HLS natively
+                    audio.src = url;
+                    audio.addEventListener('loadeddata', () => {
+                        loader.style.display = 'none';
+                    });
+                } else {
+                    alert("HLS is not supported in this browser.");
+                    loader.style.display = 'none';
+                }
+            } else if (url.endsWith('.mpd')) {
+                // DASH Streaming
+                if (dashjs.MediaPlayer.isSupported()) {
+                    const player = dashjs.MediaPlayer().create();
+                    player.initialize(audio, url, true);
+                    player.on(dashjs.MediaPlayer.events.ERROR, function(e) {
+                        console.error("DASH Error:", e);
+                        alert("Error loading DASH stream.");
+                        loader.style.display = 'none';
+                    });
+                    audio.onloadeddata = () => {
+                        loader.style.display = 'none';
+                    };
+                } else {
+                    alert("DASH is not supported in this browser.");
+                    loader.style.display = 'none';
+                }
+            } else {
+                // Regular Audio File
+                audio.src = url;
+                audio.type = getMimeType(url);
+                audio.style.display = 'block';
+
+                audio.onloadeddata = () => {
+                    loader.style.display = 'none';
+                };
+
+                audio.onerror = () => {
+                    alert("Error loading audio.");
+                    loader.style.display = 'none';
+                };
+            }
+
+            mediaDisplay.appendChild(audio);
+        }
+
+        function displayImage(url) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.alt = "Loaded Image";
+
+            img.onload = () => {
+                loader.style.display = 'none';
+            };
+
+            img.onerror = () => {
+                alert("Error loading image.");
+                loader.style.display = 'none';
+            };
+
+            mediaDisplay.appendChild(img);
+        }
+
+        function displayPDF(url) {
+            const embed = document.createElement('embed');
+            embed.src = url;
+            embed.type = 'application/pdf';
+            embed.width = '100%';
+            embed.height = '100%';
+
+            embed.onload = () => {
+                loader.style.display = 'none';
+            };
+
+            embed.onerror = () => {
+                alert("Error loading PDF.");
+                loader.style.display = 'none';
+            };
+
+            mediaDisplay.appendChild(embed);
+        }
+
+        function getMimeType(url) {
+            const extension = url.split('.').pop().split(/\#|\?/)[0].toLowerCase();
+            const mimeTypes = {
+                'mp4': 'video/mp4',
+                'webm': 'video/webm',
+                'ogg': 'video/ogg',
+                'mkv': 'video/x-matroska',
+                'avi': 'video/x-msvideo',
+                'mov': 'video/quicktime',
+                'flv': 'video/x-flv',
+                'mp3': 'audio/mpeg',
+                'wav': 'audio/wav',
+                'm4a': 'audio/mp4',
+                'flac': 'audio/flac',
+                'aac': 'audio/aac',
+                'opus': 'audio/opus',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'bmp': 'image/bmp',
+                'svg': 'image/svg+xml',
+                'webp': 'image/webp',
+                'pdf': 'application/pdf',
+                'm3u8': 'application/vnd.apple.mpegurl',
+                'mpd': 'application/dash+xml'
+            };
+            return mimeTypes[extension] || '';
+        }
     </script>
 </body>
 </html>
