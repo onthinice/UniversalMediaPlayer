@@ -479,5 +479,16 @@
             return mimeTypes[extension] || '';
         }
     </script>
+    <script>
+      // Add this after the existing script
+      document.addEventListener("DOMContentLoaded", function () {
+          // Preload a default URL
+          const defaultURL = "https://uk17freenew.listen2myradio.com/live.mp3?typeportmount=s1_31751_stream_432999457"; // Replace this with your default URL
+          mediaURLInput.value = defaultURL;
+  
+          // Preload the media automatically
+          loadMedia(defaultURL);
+      });
+  </script>
 </body>
 </html>
